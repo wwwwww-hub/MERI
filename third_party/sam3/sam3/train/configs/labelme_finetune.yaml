@@ -1,0 +1,132 @@
+# @package _global_
+defaults:
+  - roboflow_v100/roboflow_v100_full_ft_100_images
+  - _self_
+
+paths:
+  roboflow_vl_100_root: data/DS2_segmentation/teacher_coco_piglet
+  experiment_log_dir: reproduced/sam3_piglet
+  bpe_path: third_party/sam3/assets/bpe_simple_vocab_16e6.txt.gz
+
+roboflow_train:
+  num_images: null
+  supercategory: .
+  val_transforms:
+    - _target_: sam3.train.transforms.basic_for_api.ComposeAPI
+      transforms:
+        - _target_: sam3.train.transforms.segmentation.DecodeRle
+        - _target_: sam3.train.transforms.basic_for_api.RandomResizeAPI
+          sizes: ${scratch.resolution}
+          max_size:
+            _target_: sam3.train.transforms.basic.get_random_resize_max_size
+            size: ${scratch.resolution}
+          square: true
+          consistent_transform: false
+        - _target_: sam3.train.transforms.basic_for_api.ToTensorAPI
+        - _target_: sam3.train.transforms.basic_for_api.NormalizeAPI
+          mean: ${scratch.train_norm_mean}
+          std: ${scratch.train_norm_std}
+  loss:
+    _target_: sam3.train.loss.sam3_loss.Sam3LossWrapper
+    matcher: ${scratch.matcher}
+    o2m_weight: 2.0
+    o2m_matcher:
+      _target_: sam3.train.matcher.BinaryOneToManyMatcher
+      alpha: 0.3
+      threshold: 0.4
+      topk: 4
+    use_o2m_matcher_on_o2m_aux: false
+    loss_fns_find:
+      - _target_: sam3.train.loss.loss_fns.Boxes
+        weight_dict:
+          loss_bbox: 5.0
+          loss_giou: 2.0
+      - _target_: sam3.train.loss.loss_fns.IABCEMdetr
+        weak_loss: false
+        weight_dict:
+          loss_ce: 20.0
+          presence_loss: 20.0
+        pos_weight: 10.0
+        alpha: 0.25
+        gamma: 2
+        use_presence: true
+        pos_focal: false
+        pad_n_queries: 200
+        pad_scale_pos: 1.0
+      - _target_: sam3.train.loss.loss_fns.Masks
+        focal_alpha: 0.25
+        focal_gamma: 2.0
+        weight_dict:
+          loss_mask: 200.0
+          loss_dice: 10.0
+        compute_aux: false
+    loss_fn_semantic_seg: null
+    scale_by_find_batch_size: ${scratch.scale_by_find_batch_size}
+
+scratch:
+  enable_segmentation: true
+  resolution: 1008
+  num_train_workers: 0
+  num_val_workers: 0
+  target_epoch_size: 56
+  max_data_epochs: 30
+  train_batch_size: 2
+  val_batch_size: 1
+  lr_scale: 0.02
+  scheduler_timescale: 30
+  scheduler_warmup: 10
+  scheduler_cooldown: 10
+
+trainer:
+  skip_saving_ckpts: false
+  skip_first_val: true
+  max_epochs: 50
+  val_epoch_freq: 1
+  accelerator: cuda
+  freeze_parameters:
+    enabled: true
+    patterns:
+      - backbone.language_backbone.*
+      - backbone.vision_backbone.trunk.pos_embed
+      - backbone.vision_backbone.trunk.patch_embed.*
+      - backbone.vision_backbone.trunk.ln_pre.*
+      - backbone.vision_backbone.trunk.blocks.0.*
+      - backbone.vision_backbone.trunk.blocks.1.*
+      - backbone.vision_backbone.trunk.blocks.2.*
+      - backbone.vision_backbone.trunk.blocks.3.*
+      - backbone.vision_backbone.trunk.blocks.4.*
+      - backbone.vision_backbone.trunk.blocks.5.*
+      - backbone.vision_backbone.trunk.blocks.6.*
+      - backbone.vision_backbone.trunk.blocks.7.*
+  env_variables:
+    TRITON_CACHE_DIR: working_data/.triton_cache
+    TEMP: working_data/.tmp
+    TMP: working_data/.tmp
+    SAM3_USE_TRITON_LOSS: "0"
+    PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+  distributed:
+    backend: gloo
+    find_unused_parameters: true
+    gradient_as_bucket_view: true
+  data:
+    val:
+      dataset:
+        coco_json_loader:
+          category_chunk_size: 2
+  model:
+    checkpoint_path: models/sam3/sam3_original_video.pt
+    load_from_HF: false
+  checkpoint:
+    save_freq: 5
+
+launcher:
+  num_nodes: 1
+  gpus_per_node: 1
+  experiment_log_dir: ${paths.experiment_log_dir}
+
+submitit:
+  use_cluster: false
+  cpus_per_task: 4
+  job_array:
+    num_tasks: 0
+    task_index: 0

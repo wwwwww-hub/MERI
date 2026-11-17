@@ -1,0 +1,9 @@
+-r requirements-meri.txt
+-e .
+torch==2.7.0
+torchvision==0.22.0
+opencv-python==4.13.0.92
+pycocotools
+xmltodict
+PyYAML
+Pillow

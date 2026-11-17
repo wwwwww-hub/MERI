@@ -1,0 +1,13 @@
+# These are large release assets. Use Git LFS or distribute separate archives.
+*.pt filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
+*.joblib filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.npz filter=lfs diff=lfs merge=lfs -text
+data/**/*.csv.gz filter=lfs diff=lfs merge=lfs -text
+data/DS1_screening/*.mp4 filter=lfs diff=lfs merge=lfs -text
+data/DS3_tracking/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+data/DS4_intervals/videos/*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.py text eol=lf
+*.md text eol=lf

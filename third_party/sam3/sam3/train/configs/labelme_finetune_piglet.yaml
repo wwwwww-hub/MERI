@@ -1,0 +1,18 @@
+# @package _global_
+defaults:
+  - labelme_finetune
+  - _self_
+
+paths:
+  experiment_log_dir: reproduced/sam3_piglet
+  roboflow_vl_100_root: data/DS2_segmentation/teacher_coco_piglet
+
+roboflow_train:
+  supercategory: .
+
+trainer:
+  data:
+    val:
+      dataset:
+        coco_json_loader:
+          category_chunk_size: 1

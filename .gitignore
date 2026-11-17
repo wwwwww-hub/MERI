@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+.venv/
+working_data/
+reproduced/
+*.egg-info/
+
+/data/
+/data.zip
+/models/
+/models.zip
